@@ -82,3 +82,8 @@ func NewBufferFromPoolWithCap(size int) *Buffer {
 func (b *Buffer) ReturnToPool() {
 	bufpool.Put(b)
 }
+
+// Resize cuts off the end of buffer.
+func (b *Buffer) Resize(size int) {
+	b.Bytes = b.Bytes[:size]
+}
