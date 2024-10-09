@@ -211,14 +211,14 @@ func (e *StructEncoder) setupLastField() {
 
 		instr.fun = func(_ unsafe.Pointer, w *Buffer) {
 			if w.Bytes[len(w.Bytes)-1] == ',' { // remove any superfluous "," in the event the last field was omitted
-				w.Resize(len(w.Bytes) - 1)
+				w.Bytes = w.Bytes[:len(w.Bytes)-1]
 			}
 		}
 		e.o = false
 
 	} else if e.cb.Bytes[len(e.cb.Bytes)-1] == ',' {
 		// it doesn't matter if this makes the slice empty as this is before the flunk
-		e.cb.Resize(len(e.cb.Bytes) - 1)
+		e.cb.Bytes = e.cb.Bytes[:len(e.cb.Bytes)-1]
 	}
 }
 
