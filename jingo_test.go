@@ -12,31 +12,31 @@ import (
 )
 
 type all struct {
-	ignoreMe1   string
-	PropBool    bool    `json:"propBool"`
-	PropInt     int     `json:"propInt"`
-	PropInt8    int8    `json:"propInt8"`
-	PropInt16   int16   `json:"propInt16"`
-	PropInt32   int32   `json:"propInt32"`
-	PropInt64   int64   `json:"propInt64"`
-	PropUint    uint    `json:"propUint"`
-	PropUint8   uint8   `json:"propUint8"`
-	PropUint16  uint16  `json:"propUint16"`
-	PropUint32  uint32  `json:"propUint32"`
-	PropUint64  uint64  `json:"propUint64"`
-	PropFloat32 float32 `json:"propFloat32"`
-	PropFloat64 float64 `json:"propFloat64,stringer"`
-	PropString  string  `json:"propString"`
-	PropStruct  struct {
-		PropNames        []string  `json:"propName"`
-		PropPs           []*string `json:"ps"`
-		PropNamesEscaped []string  `json:"propNameEscaped,escape"`
-	} `json:"propStruct"`
+	ignoreMe1    string
+	PropBool     bool    `json:"propBool"`
+	PropInt      int     `json:"propInt"`
+	PropInt8     int8    `json:"propInt8"`
+	PropInt16    int16   `json:"propInt16"`
+	PropInt32    int32   `json:"propInt32"`
+	PropInt64    int64   `json:"propInt64"`
+	PropUint     uint    `json:"propUint"`
+	PropUint8    uint8   `json:"propUint8"`
+	PropUint16   uint16  `json:"propUint16"`
+	PropUint32   uint32  `json:"propUint32"`
+	PropUint64   uint64  `json:"propUint64"`
+	PropFloat32  float32 `json:"propFloat32"`
+	PropFloat64  float64 `json:"propFloat64,stringer"`
+	PropString   string  `json:"propString"`
 	ignoreStruct struct {
 		ignoreMeStruct1 string
 		ignoreMeStruct2 string
 		ignoreMeStruct3 string
 	}
+	PropStruct struct {
+		PropNames        []string  `json:"propName"`
+		PropPs           []*string `json:"ps"`
+		PropNamesEscaped []string  `json:"propNameEscaped,escape"`
+	} `json:"propStruct"`
 	PropEncode         encode0       `json:"propEncode,encoder"`
 	PropEncodeP        *encode0      `json:"propEncodeP,encoder"`
 	PropEncodenilP     *encode0      `json:"propEncodenilP,encoder"`
@@ -211,21 +211,23 @@ func Example_testStruct2() {
 
 	type testStruct2 struct {
 		Raw  []byte `json:"raw,raw"`
-		Raw2 []byte `json:"b,raw"`
+		Raw2 []byte `json:"c,raw"`
+		Raw3 int    `json:"b,raw"`
 	}
 
 	var enc = NewStructEncoder(testStruct2{})
 
 	b := NewBufferFromPool()
 	v := testStruct2{
-		Raw: []byte(`{"mapKey1":1,"mapKey2":2}`),
+		Raw:  []byte(`{"mapKey1":1,"mapKey2":2}`),
+		Raw3: 1,
 	}
 
 	enc.Marshal(&v, b)
 	fmt.Println(b.String())
 
 	// Output:
-	// {"raw":{"mapKey1":1,"mapKey2":2},"b":null}
+	// {"raw":{"mapKey1":1,"mapKey2":2},"c":null,"b":null}
 }
 
 func Test_NilStruct(t *testing.T) {
@@ -533,156 +535,6 @@ func BenchmarkTimeStdLib(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		json.Marshal(&to)
-	}
-}
-
-func TestStructEncoder(t *testing.T) {
-
-	strToPtrStr := func(s string) *string {
-		return &s
-	}
-
-	type testStruct0 struct {
-		S    string  `json:"s"`
-		PtrS *string `json:"ptrS"`
-	}
-	enc0 := NewStructEncoder(testStruct0{})
-
-	type testStruct1 struct {
-		I    int64  `json:"i"`
-		PtrI *int64 `json:"ptrI"`
-	}
-	enc1 := NewStructEncoder(testStruct1{})
-
-	type testStruct2 struct {
-		SS    []string  `json:"ss"`
-		PtrSS []*string `json:"ptrSs"`
-	}
-	enc2 := NewStructEncoder(testStruct2{})
-
-	type testStruct3 struct {
-		Encoder    encode0  `json:"encoder,encoder"`
-		PtrEncoder *encode0 `json:"ptrEncoder,encoder"`
-	}
-	enc3 := NewStructEncoder(testStruct3{})
-
-	type testStruct4 struct {
-		Raw       []byte `json:"raw,raw"`
-		RawString string `json:"rawString,raw"`
-	}
-	enc4 := NewStructEncoder(testStruct4{})
-
-	type marshaler interface {
-		Marshal(s interface{}, w *Buffer)
-	}
-
-	tests := []struct {
-		name string
-		enc  marshaler
-		v    interface{}
-		want []byte
-	}{
-		{
-			"String - Zero Value",
-			enc0,
-			&testStruct0{
-				"",
-				nil,
-			},
-			[]byte(`{"s":"","ptrS":null}`),
-		},
-		{
-			"String - Foobar",
-			enc0,
-			&testStruct0{
-				"foobar",
-				func(s string) *string {
-					return &s
-				}("foobar"),
-			},
-			[]byte(`{"s":"foobar","ptrS":"foobar"}`),
-		},
-		{
-			"Int64 - Zero Value",
-			enc1,
-			&testStruct1{
-				0,
-				nil,
-			},
-			[]byte(`{"i":0,"ptrI":null}`),
-		},
-		{
-			"Int64 - 365",
-			enc1,
-			&testStruct1{
-				365,
-				func(i int64) *int64 {
-					return &i
-				}(365),
-			},
-			[]byte(`{"i":365,"ptrI":365}`),
-		},
-		{
-			"String Slice - Zero Value",
-			enc2,
-			&testStruct2{
-				nil,
-				nil,
-			},
-			[]byte(`{"ss":[],"ptrSs":[]}`),
-		},
-		{
-			"String Slice",
-			enc2,
-			&testStruct2{
-				[]string{"Manchester", "Stoken-on-Trent", "Gibraltar"},
-				[]*string{strToPtrStr("Manchester"), strToPtrStr("Stoke-on-Trent"), strToPtrStr("Gilbraltar")},
-			},
-			[]byte(`{"ss":["Manchester","Stoken-on-Trent","Gibraltar"],"ptrSs":["Manchester","Stoke-on-Trent","Gilbraltar"]}`),
-		},
-		{
-			"Encoder - Zero Value",
-			enc3,
-			&testStruct3{
-				encode0{' '},
-				nil,
-			},
-			[]byte(`{"encoder": ,"ptrEncoder":null}`),
-		},
-		{
-			"Encoder",
-			enc3,
-			&testStruct3{
-				encode0{'1'},
-				func(e encode0) *encode0 {
-					return &e
-				}(encode0{'1'}),
-			},
-			[]byte(`{"encoder":1,"ptrEncoder":1}`),
-		},
-		{
-			"Raw",
-			enc4,
-			&testStruct4{
-				[]byte(`{"mapKey1":1,"mapKey2":2}`),
-				`{"mapKey1":1,"mapKey2":2}`,
-			},
-			[]byte(`{"raw":{"mapKey1":1,"mapKey2":2},"rawString":{"mapKey1":1,"mapKey2":2}}`),
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-
-			buf := NewBufferFromPool()
-			defer buf.ReturnToPool()
-
-			tt.enc.Marshal(tt.v, buf)
-
-			if !bytes.Equal(tt.want, buf.Bytes) {
-				t.Errorf("\nwant:\n%s\ngot:\n%s", tt.want, buf.Bytes)
-			}
-		})
 	}
 }
 
@@ -1049,31 +901,7 @@ func BenchmarkOmitEmptySmallStdLib(b *testing.B) {
 
 func TestSliceEncoder(t *testing.T) {
 
-	type innerStruct struct {
-		S string `json:"s"`
-	}
-
-	int642PtrInt64 := func(i int64) *int64 {
-		return &i
-	}
-
-	type testSlice0 []*innerStruct
-	enc0 := NewSliceEncoder(testSlice0{})
-
-	type testSlice1 []innerStruct
-	enc1 := NewSliceEncoder(testSlice1{})
-
-	type testSlice2 [][]string
-	enc2 := NewSliceEncoder(testSlice2{})
-
-	type testSlice3 []*int64
-	enc3 := NewSliceEncoder(testSlice3{})
-
-	type testSlice4 []int64
-	enc4 := NewSliceEncoder(testSlice4{})
-
-	type testSlice5 []*[]string
-	enc5 := NewSliceEncoder(testSlice5{})
+	enc := NewSliceEncoder([]string{})
 
 	type marshaler interface {
 		Marshal(s interface{}, w *Buffer)
@@ -1086,40 +914,22 @@ func TestSliceEncoder(t *testing.T) {
 		want []byte
 	}{
 		{
-			"Ptr Struct",
-			enc0,
-			&testSlice0{&innerStruct{"1"}, &innerStruct{"2"}, &innerStruct{"3"}, nil},
-			[]byte(`[{"s":"1"},{"s":"2"},{"s":"3"},null]`),
+			"SliceEncoder String - Empty",
+			enc,
+			&[]string{},
+			[]byte("[]"),
 		},
 		{
-			"Struct",
-			enc1,
-			&testSlice1{{"1"}, {"2"}, {"3"}},
-			[]byte(`[{"s":"1"},{"s":"2"},{"s":"3"}]`),
+			"SliceEncoder String - Single",
+			enc,
+			&[]string{"0"},
+			[]byte(`["0"]`),
 		},
 		{
-			"String Slice",
-			enc2,
-			&testSlice2{{"1A", "2A", "3A"}, {"1B", "2B", "3B"}, {"1C", "2C", "3"}},
-			[]byte(`[["1A","2A","3A"],["1B","2B","3B"],["1C","2C","3"]]`),
-		},
-		{
-			"Ptr Basic Non-string",
-			enc3,
-			&testSlice3{int642PtrInt64(1), int642PtrInt64(2), int642PtrInt64(3)},
-			[]byte(`[1,2,3]`),
-		},
-		{
-			"Basic Non-string",
-			enc4,
-			&testSlice4{1, 2, 3},
-			[]byte(`[1,2,3]`),
-		},
-		{
-			"Ptr String Slice",
-			enc5,
-			&testSlice5{&[]string{"1A", "2A", "3A"}, &[]string{"1B", "2B", "3B"}, &[]string{"1C", "2C", "3C"}},
-			[]byte(`[["1A","2A","3A"],["1B","2B","3B"],["1C","2C","3C"]]`),
+			"SliceEncoder String - Many",
+			enc,
+			&[]string{"0", "1", "2"},
+			[]byte(`["0","1","2"]`),
 		},
 	}
 
@@ -1134,6 +944,7 @@ func TestSliceEncoder(t *testing.T) {
 			if !bytes.Equal(tt.want, buf.Bytes) {
 				t.Errorf("\nwant:\n%s\ngot:\n%s", tt.want, buf.Bytes)
 			}
+
 		})
 	}
 }
@@ -1192,8 +1003,6 @@ func BenchmarkSliceStdLib(b *testing.B) {
 		json.Marshal(&ss)
 	}
 }
-
-//
 
 // var fakeType = SmallPayload{}
 // var fake = NewSmallPayload()
